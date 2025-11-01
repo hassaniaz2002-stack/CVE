@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CVE Vulnerability Dashboard</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+        margin: 0; 
+        padding: 0;
+        background: #f5f7fa;
+        color: #2d3748;
+        line-height: 1.6;
+      }
+      .container { max-width: 100%; margin: 0 auto; padding: 24px; overflow-x: hidden; }
+      .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 32px 24px; border-radius: 12px; margin-bottom: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+      .header h1 { margin: 0 0 8px; font-size: 32px; font-weight: 700; }
+      .header .subtitle { opacity: 0.9; font-size: 14px; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+      .stats { display: flex; gap: 12px; flex-wrap: wrap; width: 100%; }
+      .stat-card { background: white; padding: 16px 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #667eea; flex: 1; min-width: 150px; }
+      .stat-label { font-size: 12px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600; }
+      .stat-value { font-size: 24px; font-weight: 700; color: #2d3748; }
+      .toolbar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+      input, select, button { 
+        padding: 12px 16px; 
+        border-radius: 8px; 
+        border: 1px solid #e2e8f0; 
+        background: white; 
+        color: #2d3748; 
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+      input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.1); }
+      input, select { flex: 1; min-width: 200px; }
+      button { 
+        cursor: pointer; 
+        background: #667eea; 
+        border: none; 
+        color: white; 
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      button:hover { background: #5568d3; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+      .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-bottom: 32px; }
+      .chart-card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid #667eea; }
+      .chart-title { margin: 0 0 16px; font-size: 18px; font-weight: 700; color: #2d3748; }
+      .table-wrap { 
+        background: white; 
+        border-radius: 12px; 
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08); 
+        margin-bottom: 24px;
+        width: 100%;
+      }
+      table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        table-layout: fixed;
+      }
+      thead th { 
+        text-align: left; 
+        font-weight: 700; 
+        font-size: 12px; 
+        color: #4a5568; 
+        padding: 12px 8px; 
+        background: #f7fafc; 
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e2e8f0;
+        word-wrap: break-word;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      thead .filters th { 
+        padding: 8px 3px; 
+        background: #f7fafc; 
+        border-bottom: 1px solid #e2e8f0;
+        width: auto;
+        box-sizing: border-box;
+        overflow: hidden;
+        position: relative;
+      }
+      thead .filters input, thead .filters select { 
+        width: 100%; 
+        max-width: 100%;
+        padding: 6px 4px; 
+        border-radius: 6px; 
+        border: 1px solid #e2e8f0; 
+        background: white; 
+        color: #2d3748;
+        font-size: 12px;
+        box-sizing: border-box;
+        min-width: 0;
+      }
+      thead .filters select {
+        padding: 6px 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 4px center;
+        padding-right: 20px;
+      }
+      thead .filters input:focus, thead .filters select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 2px rgba(102,126,234,0.1);
+        outline: none;
+      }
+      thead .filters .range { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 6px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      thead .filters .range input {
+        min-width: 0;
+        width: 100%;
+      }
+      tbody td { 
+        padding: 12px 8px; 
+        border-bottom: 1px solid #e2e8f0; 
+        color: #4a5568; 
+        font-size: 13px; 
+        vertical-align: top;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      tbody tr:hover td { background: #f7fafc; }
+      tbody tr:last-child td { border-bottom: none; }
+      .col-id { width: 12%; font-weight: 600; color: #667eea; }
+      .col-vendor { width: 12%; }
+      .col-product { width: 13%; }
+      .col-desc { width: 28%; }
+      .col-score { width: 10%; font-weight: 600; color: #667eea; }
+      .col-sev { width: 12%; }
+      .col-date { width: 13%; color: #718096; }
+      .empty { 
+        text-align: center; 
+        padding: 48px 24px; 
+        color: #718096; 
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      }
+      .notice { 
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white; 
+        padding: 16px 20px; 
+        border-radius: 10px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+      .notice button {
+        background: rgba(255,255,255,0.2);
+        border: 1px solid rgba(255,255,255,0.3);
+      }
+      .notice button:hover {
+        background: rgba(255,255,255,0.3);
+      }
+      .row { display: grid; grid-template-columns: 1fr 200px 140px; gap: 12px; }
+      @media (max-width: 768px) { 
+        .row { grid-template-columns: 1fr; }
+        .topbar { flex-direction: column; align-items: stretch; }
+        .stats { flex-direction: column; }
+        .charts { grid-template-columns: 1fr; }
+        .container { padding: 16px; }
+      }
+      .badge { 
+        display: inline-block; 
+        padding: 6px 12px; 
+        border-radius: 20px; 
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-weight: 600; 
+        font-size: 13px; 
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+    <script>
+      const { useEffect, useMemo, useRef, useState } = React;
+
+      function useCves() {
+        const [cves, setCves] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+
+        async function load() {
+          setLoading(true);
+          setError(null);
+          try {
+            const res = await fetch('/api/cves');
+            if (!res.ok) throw new Error('Failed to fetch CVEs');
+            const data = await res.json();
+            setCves(Array.isArray(data) ? data : []);
+          } catch (e) {
+            setError(e.message || 'Error');
+          } finally {
+            setLoading(false);
+          }
+        }
+
+        useEffect(() => { load(); }, []);
+
+        return { cves, loading, error, reload: load, setCves };
+      }
+
+      function formatDate(value) {
+        if (!value) return '';
+        try { return new Date(value).toISOString().slice(0, 10); } catch { return String(value); }
+      }
+
+      function getPublished(valueObj) {
+        return valueObj.published_date || valueObj.Published_Date || valueObj.published || valueObj.date || valueObj.created_at;
+      }
+
+      function isSameUtcDate(a, b) {
+        return a.getUTCFullYear() === b.getUTCFullYear() && a.getUTCMonth() === b.getUTCMonth() && a.getUTCDate() === b.getUTCDate();
+      }
+
+      function computeSeverityCounts(items) {
+        const counts = { low: 0, medium: 0, high: 0, critical: 0, unknown: 0 };
+        items.forEach(item => {
+          const sev = String(item.base_severity || item.Base_Severity || item.severity || '').toLowerCase();
+          if (sev.includes('critical')) counts.critical++;
+          else if (sev.includes('high')) counts.high++;
+          else if (sev.includes('medium') || sev.includes('moderate')) counts.medium++;
+          else if (sev.includes('low')) counts.low++;
+          else counts.unknown++;
+        });
+        return counts;
+      }
+
+      function computeNewCvesByMonth(items, monthsBack = 6) {
+        const now = new Date();
+        const labels = [];
+        const counts = [];
+
+        // Create month labels (e.g. ["Jun 2025", "Jul 2025", ...])
+        for (let i = monthsBack - 1; i >= 0; i--) {
+          const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - i, 1));
+          const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          labels.push(label);
+          counts.push(0);
+        }
+
+        const normalizeDate = (val) => {
+          if (!val) return null;
+          let date = new Date(val);
+          if (!isNaN(date)) return date;
+          // Try other formats if invalid
+          const parts = String(val).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+          if (parts) return new Date(`${parts[1]}-${parts[2].padStart(2, '0')}-${parts[3].padStart(2, '0')}`);
+          return null;
+        };
+
+        // Count CVEs per month
+        items.forEach(item => {
+          const raw = getPublished(item);
+          const d = normalizeDate(raw);
+          if (!d || isNaN(d)) return;
+
+          // Create label in same format
+          const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          const idx = labels.indexOf(label);
+          if (idx >= 0) counts[idx]++;
+        });
+
+        return { labels, counts };
+      }
+
+
+      function pick(value, ...keys) {
+        for (const k of keys) {
+          if (value[k] != null && String(value[k]).trim() !== '') return value[k];
+        }
+        return '';
+      }
+
+      function App() {
+        const { cves, loading, error, reload, setCves } = useCves();
+        const [query, setQuery] = useState('');
+        const [severity, setSeverity] = useState('');
+        const [newIncoming, setNewIncoming] = useState(0);
+
+        const [fCve, setFCve] = useState('');
+        const [fVendor, setFVendor] = useState('');
+        const [fProduct, setFProduct] = useState('');
+        const [fDesc, setFDesc] = useState('');
+        const [fScoreMin, setFScoreMin] = useState('');
+        const [fScoreMax, setFScoreMax] = useState('');
+        const [fSev, setFSev] = useState('');
+        const [fDateFrom, setFDateFrom] = useState('');
+        const [fDateTo, setFDateTo] = useState('');
+
+        const severityCanvasRef = useRef(null);
+        const newCvesCanvasRef = useRef(null);
+        const chartRefs = useRef({ severity: null, newCves: null });
+        const seenIdsRef = useRef(new Set());
+        const pollingRef = useRef(null);
+
+        const todayCount = useMemo(() => {
+          const today = new Date();
+          let n = 0;
+          for (const item of cves) {
+            const raw = getPublished(item);
+            if (!raw) continue;
+            const d = new Date(raw);
+            if (!isNaN(d) && isSameUtcDate(today, d)) n++;
+          }
+          return n;
+        }, [cves]);
+
+        useEffect(() => {
+          if (cves && cves.length > 0) {
+            const next = new Set(cves.map(x => String(x.cve || x.CVE || x.cve_id || x.id || '')));
+            seenIdsRef.current = next;
+          }
+        }, [cves]);
+
+        useEffect(() => {
+          async function checkNew() {
+            try {
+              const res = await fetch('/api/cves');
+              if (!res.ok) return;
+              const data = await res.json();
+              const currentIds = new Set(data.map(x => String(x.cve || x.CVE || x.cve_id || x.id || '')));
+              let added = 0;
+              currentIds.forEach(id => { if (id && !seenIdsRef.current.has(id)) added++; });
+              setNewIncoming(added);
+            } catch {}
+          }
+          pollingRef.current = setInterval(checkNew, 30000);
+          return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+        }, []);
+
+        function toNum(v) {
+          if (v == null) return null;
+          const cleaned = String(v).trim().match(/[0-9.]+/);
+          const n = cleaned ? parseFloat(cleaned[0]) : NaN;
+          return Number.isFinite(n) ? n : null;
+        }
+
+
+        const filtered = useMemo(() => {
+          const q = query.trim().toLowerCase();
+          const cveQ = fCve.trim().toLowerCase();
+          const vendorQ = fVendor.trim().toLowerCase();
+          const productQ = fProduct.trim().toLowerCase();
+          const descQ = fDesc.trim().toLowerCase();
+          const sevQ = (fSev || severity).trim().toLowerCase();
+          const minScore = toNum(fScoreMin);
+          const maxScore = toNum(fScoreMax);
+          const from = fDateFrom ? new Date(fDateFrom + 'T00:00:00Z') : null;
+          const to = fDateTo ? new Date(fDateTo + 'T23:59:59Z') : null;
+
+          return cves.filter(item => {
+            const idRaw = String(pick(item, 'cve', 'CVE', 'cve_id', 'id'));
+            const id = idRaw.toLowerCase();
+            const vendor = String(pick(item, 'vendor', 'vendor_name')).toLowerCase();
+            const product = String(pick(item, 'products', 'product', 'product_name')).toLowerCase();
+            const desc = String(pick(item, 'description', 'summary')).toLowerCase();
+            const sev = String(pick(item, 'base_severity', 'Base_Severity', 'severity')).toLowerCase();
+            const score = toNum(pick(item, 'base_score', 'Base_Score', 'cvss_score'));
+            const dateRaw = getPublished(item);
+            const dateObj = dateRaw ? new Date(dateRaw) : null;
+
+            if (q && !(id.includes(q) || desc.includes(q))) return false;
+            if (cveQ && !id.includes(cveQ)) return false;
+            if (vendorQ && !vendor.includes(vendorQ)) return false;
+            if (productQ && !product.includes(productQ)) return false;
+            if (descQ && !desc.includes(descQ)) return false;
+            if (sevQ && !sev.includes(sevQ)) return false;
+            if (minScore != null && !(score != null && score >= minScore)) return false;
+            if (maxScore != null && !(score != null && score <= maxScore)) return false;
+            if (from && !(dateObj && dateObj >= from)) return false;
+            if (to && !(dateObj && dateObj <= to)) return false;
+            return true;
+          });
+        }, [cves, query, fCve, fVendor, fProduct, fDesc, fSev, fScoreMin, fScoreMax, fDateFrom, fDateTo, severity]);
+
+        useEffect(() => {
+          if (!window.Chart) return;
+
+          const sevCounts = computeSeverityCounts(filtered);
+          const sevLabels = ['Low', 'Medium', 'High', 'Critical', 'Unknown'];
+          const sevData = [sevCounts.low, sevCounts.medium, sevCounts.high, sevCounts.critical, sevCounts.unknown];
+          const sevColors = ['#48bb78', '#ed8936', '#f56565', '#c53030', '#a0aec0'];
+
+          if (chartRefs.current.severity) chartRefs.current.severity.destroy();
+          if (severityCanvasRef.current) {
+            chartRefs.current.severity = new Chart(severityCanvasRef.current.getContext('2d'), {
+              type: 'doughnut',
+              data: { 
+                labels: sevLabels, 
+                datasets: [{ 
+                  data: sevData, 
+                  backgroundColor: sevColors, 
+                  borderColor: '#ffffff', 
+                  borderWidth: 2,
+                  hoverOffset: 4
+                }] 
+              },
+              options: { 
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { 
+                  legend: { 
+                    position: 'bottom',
+                    labels: { 
+                      color: '#4a5568',
+                      padding: 15,
+                      font: { size: 12, weight: 600 }
+                    } 
+                  },
+                  tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: 600 },
+                    bodyFont: { size: 13 }
+                  }
+                }
+              }
+            });
+          }
+
+          const monthly = computeNewCvesByMonth(filtered, 6);
+          if (chartRefs.current.newCves) chartRefs.current.newCves.destroy();
+          if (newCvesCanvasRef.current) {
+            chartRefs.current.newCves = new Chart(newCvesCanvasRef.current.getContext('2d'), {
+              type: 'bar',
+              data: {
+                labels: monthly.labels,
+                datasets: [{ 
+                  label: 'New CVEs', 
+                  data: monthly.counts, 
+                  backgroundColor: 'rgba(102,126,234,0.8)',
+                  borderColor: '#667eea',
+                  borderWidth: 2,
+                  borderRadius: 6,
+                  borderSkipped: false
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                  x: { 
+                    ticks: { color: '#718096', font: { size: 11 } },
+                    grid: { color: '#e2e8f0', drawBorder: false }
+                  },
+                  y: { 
+                    ticks: { color: '#718096', font: { size: 11 } },
+                    grid: { color: '#e2e8f0', drawBorder: false },
+                    beginAtZero: true,
+                    precision: 0
+                  }
+                },
+                plugins: { 
+                  legend: { display: false },
+                  tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    titleFont: { size: 14, weight: 600 },
+                    bodyFont: { size: 13 }
+                  }
+                }
+              }
+            });
+          }
+
+          return () => {
+            if (chartRefs.current.severity) chartRefs.current.severity.destroy();
+            if (chartRefs.current.newCves) chartRefs.current.newCves.destroy();
+          };
+        }, [filtered]);
+
+        async function loadNewIncoming() {
+          try {
+            const res = await fetch('/api/cves');
+            if (!res.ok) return;
+            const data = await res.json();
+            setCves(Array.isArray(data) ? data : []);
+            seenIdsRef.current = new Set((Array.isArray(data) ? data : []).map(x => String(x.cve || x.CVE || x.cve_id || x.id || '')));
+            setNewIncoming(0);
+          } catch {}
+        }
+
+        function renderCell(value) {
+          if (value == null) return '';
+          const s = String(value);
+          return s.length > 300 ? s.slice(0, 300) + '…' : s;
+        }
+
+        function getSeverityColor(sev) {
+          const s = String(sev).toLowerCase();
+          if (s.includes('critical')) return '#c53030';
+          if (s.includes('high')) return '#f56565';
+          if (s.includes('medium')) return '#ed8936';
+          if (s.includes('low')) return '#48bb78';
+          return '#a0aec0';
+        }
+
+        function downloadCSV() {
+          if (filtered.length === 0) {
+            alert('No data to export');
+            return;
+          }
+
+          const headers = ['CVE', 'Vendor', 'Product', 'Description', 'Base Score', 'Base Severity', 'Date Published'];
+          const rows = filtered.map(item => {
+            const escapeCSV = (value) => {
+              if (value == null || value === '') return '';
+              const str = String(value);
+              if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+              }
+              return str;
+            };
+
+            return [
+              escapeCSV(pick(item, 'cve', 'CVE', 'cve_id', 'id')),
+              escapeCSV(pick(item, 'vendor', 'vendor_name')),
+              escapeCSV(pick(item, 'products', 'product', 'product_name')),
+              escapeCSV(pick(item, 'description', 'summary')),
+              escapeCSV(pick(item, 'base_score', 'Base_Score', 'cvss_score')),
+              escapeCSV(pick(item, 'base_severity', 'Base_Severity', 'severity')),
+              escapeCSV(formatDate(getPublished(item)))
+            ].join(',');
+          });
+
+          const csvContent = [
+            headers.join(','),
+            ...rows
+          ].join('\n');
+
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          link.setAttribute('href', url);
+          link.setAttribute('download', `cve_data_${new Date().toISOString().slice(0, 10)}.csv`);
+          link.style.visibility = 'hidden';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+
+        return (
+          React.createElement('div', { className: 'container' },
+            React.createElement('div', { className: 'header' },
+              React.createElement('h1', null, 'CVE Vulnerability Dashboard'),
+              React.createElement('div', { className: 'subtitle' }, 'Comprehensive security vulnerability tracking and analysis')
+            ),
+
+            React.createElement('div', { className: 'topbar' },
+              React.createElement('div', { className: 'stats' },
+                React.createElement('div', { className: 'stat-card' },
+                  React.createElement('div', { className: 'stat-label' }, 'Total CVEs'),
+                  React.createElement('div', { className: 'stat-value' }, cves.length)
+                ),
+                React.createElement('div', { className: 'stat-card' },
+                  React.createElement('div', { className: 'stat-label' }, 'Published Today'),
+                  React.createElement('div', { className: 'stat-value' }, todayCount)
+                ),
+                React.createElement('div', { className: 'stat-card' },
+                  React.createElement('div', { className: 'stat-label' }, 'Filtered Results'),
+                  React.createElement('div', { className: 'stat-value' }, filtered.length)
+                )
+              )
+            ),
+
+            newIncoming > 0 && React.createElement('div', { className: 'notice', role: 'status' },
+              React.createElement('span', null, `${newIncoming} new CVE${newIncoming === 1 ? '' : 's'} available`),
+              React.createElement('button', { onClick: loadNewIncoming }, 'Load New')
+            ),
+
+            React.createElement('div', { className: 'toolbar row' },
+              React.createElement('input', {
+                placeholder: 'Search by CVE ID or description…',
+                value: query,
+                onChange: e => setQuery(e.target.value)
+              }),
+              React.createElement('select', {
+                value: severity,
+                onChange: e => setSeverity(e.target.value)
+              },
+                React.createElement('option', { value: '' }, 'All Severities'),
+                React.createElement('option', { value: 'low' }, 'Low'),
+                React.createElement('option', { value: 'medium' }, 'Medium'),
+                React.createElement('option', { value: 'high' }, 'High'),
+                React.createElement('option', { value: 'critical' }, 'Critical')
+              ),
+              React.createElement('button', { onClick: reload }, loading ? 'Loading…' : 'Refresh')
+            ),
+
+            filtered.length > 0 && React.createElement('div', { style: { display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' } },
+              React.createElement('button', { 
+                onClick: downloadCSV,
+                onMouseEnter: (e) => e.target.style.background = '#38a169',
+                onMouseLeave: (e) => e.target.style.background = '#48bb78',
+                style: { 
+                  background: '#48bb78', 
+                  border: 'none', 
+                  color: 'white', 
+                  padding: '12px 20px', 
+                  borderRadius: '8px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }
+              }, '📥 Download CSV')
+            ),
+
+            React.createElement('div', { className: 'charts' },
+              React.createElement('div', { className: 'chart-card' },
+                React.createElement('div', { className: 'chart-title' }, 'Severity Distribution'),
+                React.createElement('canvas', { ref: severityCanvasRef, id: 'severityChart', height: 300 })
+              ),
+              React.createElement('div', { className: 'chart-card' },
+                React.createElement('div', { className: 'chart-title' }, 'New CVEs Trend (Last 6 Months)'),
+                React.createElement('canvas', { ref: newCvesCanvasRef, id: 'newCvesChart', height: 300 })
+              )
+            ),
+
+            error && React.createElement('div', { className: 'empty' }, `Error: ${error}. Please check your connection and try again.`),
+            !error && (loading ? (
+              React.createElement('div', { className: 'empty' }, 'Loading CVEs data…')
+            ) : (
+              cves.length === 0 ? (
+                React.createElement('div', { className: 'empty' }, 'No CVEs found in database')
+              ) : (
+                React.createElement('div', { className: 'table-wrap' },
+                  React.createElement('table', null,
+                    React.createElement('thead', null,
+                      React.createElement('tr', null,
+                        React.createElement('th', { className: 'col-id' }, 'CVE'),
+                        React.createElement('th', { className: 'col-vendor' }, 'Vendor'),
+                        React.createElement('th', { className: 'col-product' }, 'Product'),
+                        React.createElement('th', { className: 'col-desc' }, 'Description'),
+                        React.createElement('th', { className: 'col-score' }, 'Base Score'),
+                        React.createElement('th', { className: 'col-sev' }, 'Base Severity'),
+                        React.createElement('th', { className: 'col-date' }, 'Date Published')
+                      ),
+                      React.createElement('tr', { className: 'filters' },
+                        React.createElement('th', null, React.createElement('input', { placeholder: 'Filter CVE…', value: fCve, onChange: e => setFCve(e.target.value) })),
+                        React.createElement('th', null, React.createElement('input', { placeholder: 'Filter vendor…', value: fVendor, onChange: e => setFVendor(e.target.value) })),
+                        React.createElement('th', null, React.createElement('input', { placeholder: 'Filter product…', value: fProduct, onChange: e => setFProduct(e.target.value) })),
+                        React.createElement('th', null, React.createElement('input', { placeholder: 'Filter description…', value: fDesc, onChange: e => setFDesc(e.target.value) })),
+                        React.createElement('th', null, React.createElement('div', { className: 'range' },
+                          React.createElement('input', { type: 'number', step: '0.1', placeholder: 'Min', value: fScoreMin, onChange: e => setFScoreMin(e.target.value) }),
+                          React.createElement('input', { type: 'number', step: '0.1', placeholder: 'Max', value: fScoreMax, onChange: e => setFScoreMax(e.target.value) })
+                        )),
+                        React.createElement('th', null, React.createElement('select', { value: fSev, onChange: e => setFSev(e.target.value) },
+                          React.createElement('option', { value: '' }, 'All'),
+                          React.createElement('option', { value: 'low' }, 'Low'),
+                          React.createElement('option', { value: 'medium' }, 'Medium'),
+                          React.createElement('option', { value: 'high' }, 'High'),
+                          React.createElement('option', { value: 'critical' }, 'Critical')
+                        )),
+                        React.createElement('th', null, React.createElement('div', { className: 'range' },
+                          React.createElement('input', { type: 'date', value: fDateFrom, onChange: e => setFDateFrom(e.target.value) }),
+                          React.createElement('input', { type: 'date', value: fDateTo, onChange: e => setFDateTo(e.target.value) })
+                        ))
+                      )
+                    ),
+                    React.createElement('tbody', null,
+                      filtered.map((item, idx) => (
+                        React.createElement('tr', { key: item.cve || item.CVE || item.cve_id || item.id || idx },
+                          React.createElement('td', { className: 'col-id' }, renderCell(pick(item, 'cve', 'CVE', 'cve_id', 'id'))),
+                          React.createElement('td', { className: 'col-vendor' }, renderCell(pick(item, 'vendor', 'vendor_name'))),
+                          React.createElement('td', { className: 'col-product' }, renderCell(pick(item, 'products', 'product', 'product_name'))),
+                          React.createElement('td', { className: 'col-desc' }, renderCell(pick(item, 'description', 'summary'))),
+                          React.createElement('td', { className: 'col-score' }, renderCell(pick(item, 'base_score', 'Base_Score', 'cvss_score'))),
+                          React.createElement('td', { className: 'col-sev', style: { color: getSeverityColor(pick(item, 'base_severity', 'Base_Severity', 'severity')) } }, renderCell(pick(item, 'base_severity', 'Base_Severity', 'severity'))),
+                          React.createElement('td', { className: 'col-date' }, renderCell(formatDate(getPublished(item))))
+                        )
+                      ))
+                    )
+                  )
+                )
+              )
+            ))
+          )
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(React.createElement(App));
+    </script>
+  </body>
+</html>
